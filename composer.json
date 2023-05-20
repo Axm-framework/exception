@@ -21,7 +21,6 @@
 		"psr-4": {
 			"Axm\\Exception": "src"
 		}
-	
 	},
 	"minimum-stability": "dev",
 	"prefer-stable": true,

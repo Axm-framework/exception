@@ -19,7 +19,7 @@
     ],
 	"autoload": {
 		"psr-4": {
-			"Axm\\Exception": "src"
+			"Axm\\Exception\\": "src"
 		}
 	},
 	"minimum-stability": "dev",

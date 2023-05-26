@@ -96,7 +96,7 @@ class AxmException extends \Exception
             ];
 
             // $data['bot'] = self::chatGpt($data);
-            return show(static::render(AXM_PATH . '/Views/error', $data));
+            return show(static::render(AXM_PATH . '/exception/src/views/error', $data));
 
         endif;
     }
@@ -226,8 +226,6 @@ class AxmException extends \Exception
             ini_set('highlight.string', '#DD0000');
         }
 
-        helpers('text'); //abrir el helper que contiene la función highlight_code
-
         $errorLine--;    // adjust line number to 0-based from 1-based
         if ($errorLine < 0 || ($lines = @file($file)) === false || ($lineCount = count($lines)) <= $errorLine)
             return '';
@@ -240,7 +238,7 @@ class AxmException extends \Exception
         $output = '';
         for ($i = $beginLine; $i <= $endLine; ++$i) {
             $isErrorLine = $i === $errorLine;
-            $lineI = highlight_code(Html::decode(str_replace(["\r", "\n", "\t"], [''], $lines[$i])));
+            $lineI = static::highlight_code(htmlspecialchars_decode(str_replace(["\r", "\n", "\t"], [''], $lines[$i])));
             $code = sprintf("<span class=\"ln" . ($isErrorLine ? ' error-ln' : '') . "\">%0{$lineNumberWidth}d</span> %s", $i + 1, str_replace(["\n", "\t", "\v"], [''], ($lineI == '') ? $lineI : $lineI . '</br>'));
             if (!$isErrorLine)
                 $output .= $code;
@@ -313,5 +311,43 @@ class AxmException extends \Exception
         }
 
         return $output;
+    }
+
+    /** The highlight string function encodes and highlights
+     * brackets so we need them to start raw.
+     *
+     * Also replace any existing PHP tags to temporary markers
+     * so they don't accidentally break the string out of PHP,
+     * and thus, thwart the highlighting.
+     */
+    protected static function highlight_code(string $str): string
+    {
+        $search = ['&lt;', '&gt;', '<?', '?>', '<%', '%>', '\\', '</script>'];
+        $replace = ['<', '>', 'phptagopen', 'phptagclose', 'asptagopen', 'asptagclose', 'backslashtmp', 'scriptclose'];
+        $str = strtr($str, array_combine($search, $replace));
+
+        // The highlight_string function requires that the text be surrounded
+        // by PHP tags, which we will remove later
+        $str = highlight_string('<?php ' . $str . ' ?>', true);
+
+        $str = preg_replace(
+            [
+                '/<span style="color: #[A-Z0-9]+">&lt;\?php(?:&nbsp;| )/i',
+                '/(<span style="color: #[A-Z0-9]+">.*?)\?&gt;<\/span>\n<\/span>\n<\/code>/is',
+                '/<span style="color: #[A-Z0-9]+"><\/span>/i',
+            ],
+            [
+                '<span style="color: #$1">',
+                "$1</span>\n</span>\n</code>",
+                '',
+            ],
+            $str
+        );
+
+        $search = ['phptagopen', 'phptagclose', 'asptagopen', 'asptagclose', 'backslashtmp', 'scriptclose'];
+        $replace = ['&lt;?', '?&gt;', '&lt;%', '%&gt;', '\\', '&lt;/script&gt;'];
+        $str = strtr($str, array_combine($search, $replace));
+
+        return $str;
     }
 }

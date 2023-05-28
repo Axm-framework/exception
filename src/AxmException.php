@@ -3,8 +3,6 @@
 namespace Axm\Exception;
 
 use Axm;
-use Axm\Views\View;
-use Axm\Html\Html;
 use Axm\Services\OpenAIChatbot;
 
 /**
@@ -80,6 +78,26 @@ class AxmException extends \Exception
      *
      * @param Exception|AxmException $e
      * */
+    public static function handleError($e)
+    {
+        self::cleanBuffer();
+        self::endBuffer();
+
+        if (true !== Axm::isProduction()) :
+
+            $data = (array) $e;
+            $data['type'] = get_class($e);
+
+            return show(static::render(AXM_PATH . '/exception/src/views/error', $data));
+            exit(1);
+        endif;
+    }
+
+    /**
+     * Maneja las excepciones no capturadas.
+     *
+     * @param Exception|AxmException $e
+     * */
     public static function handleException(\Throwable $e)
     {
         self::cleanBuffer();
@@ -96,7 +114,8 @@ class AxmException extends \Exception
             ];
 
             // $data['bot'] = self::chatGpt($data);
-            return show(static::render(AXM_PATH . '/exception/src/views/error', $data));
+            return show(static::render(AXM_PATH . '/exception/src/views/exception', $data));
+            exit(1);
 
         endif;
     }
@@ -220,7 +239,6 @@ class AxmException extends \Exception
         // Set our highlight colors:
         if (function_exists('ini_set')) {
             ini_set('highlight.comment', '#008000; font-style: italic');
-            // ini_set('highlight.default', '#4b4848c0'); 
             ini_set('highlight.html', '#808080');
             ini_set('highlight.keyword', '#9406adc0; font-weight: bold');  //cc66cc
             ini_set('highlight.string', '#DD0000');
